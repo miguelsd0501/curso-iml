@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateInvoiceDto } from './dtos/create-invoice.dto';
 import { Invoice } from './interfaces/invoice.interface';
 import { v4 as uuid } from 'uuid';
@@ -27,6 +27,7 @@ export class InvoicesService {
       ...createInvoiceDto,
       status: Status.IN_PROGRESS,
     };
+    this.validateInvoice(invoiceToSave);
     this.invoices.push(invoiceToSave);
     // Lanzar en segundo plano el timbrado
     setTimeout(() => void this.stamp(invoiceToSave));
@@ -38,7 +39,7 @@ export class InvoicesService {
     if (!invoice) throw new NotFoundException();
 
     return {
-      status: invoice.status as Status,
+      status: invoice.status,
       date: invoice.date,
       folio: invoice.folio,
     };
@@ -63,6 +64,20 @@ export class InvoicesService {
   cancel(folio: string) {
     this.getStatus(folio);
     return this.invoices.filter((invoice) => invoice.folio !== folio);
+  }
+
+  private validateInvoice(invoice: Invoice) {
+    const exists = this.invoices.some(
+      (inv) =>
+        inv.rfc === invoice.rfc &&
+        inv.date.getTime() === invoice.date.getTime(), // comparar fechas exactas
+    );
+
+    if (exists) {
+      throw new BadRequestException(
+        `An invoice with RFC ${invoice.rfc} and date ${invoice.date.toISOString()} already exists`,
+      );
+    }
   }
 
   private async stamp(invoice: Invoice) {
