@@ -8,4 +8,5 @@ export interface Invoice {
   unitPrice: number;
   total: number;
   description?: string;
+  status: Status;
 }

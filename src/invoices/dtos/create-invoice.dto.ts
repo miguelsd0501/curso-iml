@@ -12,6 +12,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
+import { IsWithinLast72Hours } from '../validations/is-within-last-72-hours.decorator';
 
 export class CreateInvoiceDto {
   @IsString()
@@ -23,6 +24,9 @@ export class CreateInvoiceDto {
 
   @Type(() => Date) // convierte el string a Date
   @IsDate({ message: 'Date format is invalid' })
+  @IsWithinLast72Hours({
+    message: 'Date must be within the last 72 hours and not in the future',
+  })
   date: Date;
 
   @IsString()

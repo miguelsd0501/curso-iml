@@ -1,6 +1,16 @@
-import { Controller, Get, Post, Body, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  Query,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { InvoicesService } from './invoices.service';
-import { CreateInvoiceDto } from './dto/create-invoice.dto';
+import { CreateInvoiceDto } from './dtos/create-invoice.dto';
+import { PaginationDto } from './dtos/pagination.dto';
 
 @Controller('invoices')
 export class InvoicesController {
@@ -12,17 +22,17 @@ export class InvoicesController {
   }
 
   @Get()
-  findAll() {
-    return this.invoicesService.findAll();
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.invoicesService.findAll(paginationDto);
   }
 
   @Get(':folio/status')
-  findOne(@Param('folio') folio: string) {
-    return this.invoicesService.findOne(folio);
+  findOne(@Param('folio', ParseUUIDPipe) folio: string) {
+    return this.invoicesService.getStatus(folio);
   }
 
   @Delete(':folio')
-  remove(@Param('folio') folio: string) {
+  remove(@Param('folio', ParseUUIDPipe) folio: string) {
     return this.invoicesService.cancel(folio);
   }
 
