@@ -1,3 +1,5 @@
+import { Status } from '../enums/status.enum';
+
 export interface Invoice {
   rfc: string;
   folio: string;
