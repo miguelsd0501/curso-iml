@@ -31,6 +31,12 @@
 $ yarn install
 ```
 
+## Bibliotecas utilizadas
+- yarn add @nestjs/swagger
+- yarn add class-validator class-transformer
+- yarn add uuid
+- yarn add -D @types/uuid
+
 ## Compile and run the project
 
 ```bash
