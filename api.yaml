@@ -1,0 +1,379 @@
+openapi: 3.0.3
+info:
+  title: Invoices API
+  version: 1.0.0
+  description: |
+      Esta API expone un conjunto de endpoints para la gestion de CFDIs, permitiendo ejecutar tareas de timbrado, cancelación y obtención del estado del CFDI.
+      Más descripción...
+
+      ## Caracteristicas principales
+      - Caracteristica 1.
+      - Caracteristica 2.
+      - Caracteristica N.
+
+      ## Convenciones técnicas
+      ...
+
+      ## Autenticación y seguridad
+      ...
+
+      ## Notas adicionales
+      ...
+
+servers:
+  - url: https://api.example.com/api
+    description: Production server
+  - url: http://localhost:3000/api
+    description: Local development server
+
+paths:
+  /invoices:
+    get:
+      summary: Obtener todas las facturas
+      description: Retorna una lista páginada (default 10) de las facturas realizadas.
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+          description: Número de página a mostrar (default 1).
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          description: Número de elementos por página (default 10).
+          example: 10
+      responses:
+        '200':
+          description: Listado de facturas obtenidas de forma exitosa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInvoicesResponse'
+    post:
+      summary: Crear una nueva factura
+      description: |
+        Crea de forma asincrona una factura electrónica y retorna el estado de la operación.  
+
+        ## Reglas de negocio
+        ...
+        
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInvoiceRequest'
+      responses:
+        '202':
+          description: Invoice created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatedResponse'
+          headers:
+            Location:
+              description: Ruta para obtener el status del proceso de la factura
+              schema:
+                type: string
+                format: uri
+                example: /invoices/550e8400-e29b-41d4-a716-446655440000/status
+          links:
+            GetInvoiceStatus:
+              operationId: getInvoiceStatus
+              parameters:
+                folio: '$response.body#/folio'
+              description: >
+                El valor del parámetro `folio` retornado en la respuesta puede ser utilizado para 
+                obtener el status del proceso de la factura `GET /invoices/{id}/status`.
+        '400':
+          description: |
+            Bad Request — La factura no puede ser creada por errores de lado del cliente.  
+
+            Posibles causas:
+            ...
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestResponse'
+        
+        '409':
+          description: |
+            Conflict — La factura no puede ser creada por que ya se tiene registrada una solicitud con el mismo RFC y fecha.  
+
+            Posibles causas:
+            ...
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictResponse'
+
+  /invoices/{folio}/status:
+    get:
+      summary: Obtener el status de una factura por medio del folio.
+      operationId: getInvoiceStatus
+      description: Retorna el estado de una factura por medio del folio, sirve para conocer el estado del proceso de timbrado.
+      parameters:
+        - in: path
+          name: folio
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Identificador único (folio) de la factura.
+          example: 008cf164-f6ef-4958-b27a-add712089c29
+      responses:
+        '200':
+          description: Retorna el estado de una factura.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatedResponse'
+        '404':
+          description: |
+            Not Found — La factura no fue encontrada.  
+
+            Posibles causas:
+            ...
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponse'
+
+  /invoices/{folio}:
+    delete:
+      summary: Realizar cancelación de una factura
+      description: Realiza la cancelación de una factura en caso de ...
+      parameters:
+        - in: path
+          name: folio
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Identificador unico (folio) de la factura.
+          example: 008cf164-f6ef-4958-b27a-add712089c29
+      responses:
+        '204':
+          description: La factura ha sido cancelada con éxito, no retorna contenido.
+        '404':
+          description: |
+            Not Found — La factura no fue encontrada.  
+
+            Posibles causas:
+            ...
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundResponse'
+
+components:
+  schemas:
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: Página actual.
+          example: 1
+        limit:
+          type: integer
+          description: Número de elementos por página.
+          example: 10
+        total:
+          type: integer
+          description: Número total de facturas disponibles.
+          example: 50
+        totalPage:
+          type: integer
+          description: Número total de páginas.
+          example: 5
+
+    CreatedResponse:
+      type: object
+      properties:
+        folio:
+          type: string
+          format: uuid
+          description: Unique identifier (UUID) of the invoice.
+          example: 008cf164-f6ef-4958-b27a-add712089c29
+        status:
+          type: string
+          description: |
+                Estado de la solicitud con 5 posibles valores:
+                - Pending: declara que la factura está pendiente de timbrar.
+                - Completed: indica que la factura ha sido timbrada con éxito.
+                ...
+          enum: [Completed, Failed, InProgress, Pending, Canceled]
+          example: Pending
+
+    Invoice:
+      type: object
+      properties:
+        folio:
+          type: string
+          format: uuid
+          description: Identificador unico (UUID) de la factura.
+          example: 008cf164-f6ef-4958-b27a-add712089c29
+        rfc:
+          type: string
+          description: Mexican RFC of the customer.
+          example: ASDF991208UU9
+        date:
+          type: string
+          format: date-time
+          description: Invoice issue date (ISO 8601).
+          example: 2025-09-12T15:30:00.000Z
+        customer:
+          type: string
+          description: Name of the customer.
+          example: Miguel Santiago
+        seller:
+          type: string
+          description: Name of the seller.
+          example: Juan Perez
+        quantity:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Number of items in the invoice.
+          example: 4
+        unitPrice:
+          type: number
+          format: float
+          minimum: 0.01
+          description: Unit price of the product or service.
+          example: 4.5
+        total:
+          type: number
+          format: float
+          minimum: 0
+          description: Total amount of the invoice (quantity × unitPrice).
+          example: 18
+        status:
+          type: string
+          description: Current status of the invoice.
+          enum: [PENDING, COMPLETED, CANCELLED]
+          example: COMPLETED
+
+    CreateInvoiceRequest:
+      type: object
+      required: [rfc, date, customer, seller, quantity, unitPrice, total]
+      properties:
+        rfc:
+          type: string
+          description: |
+            RFC receptor de la factura.  
+            - Debe cumplir con el formato establecido por el SAT (Persona Física o Persona Moral).  
+            - Ejemplos válidos:  
+              - Persona Física: GODE561231GR8  
+              - Persona Moral: ABC123456T12  
+            - El valor es obligatorio y único en combinación con la fecha.  
+            - Si ya existe un registro con el mismo RFC y fecha, no se permitirá el alta.
+          example: SDGH950312UU9
+          pattern: ^([A-ZÑ&]{3,4})(\\d{2})(0[1-9]|1[0-2])(0[1-9]|[12]\\d|3[01])[A-Z\\d]{2}[A\\d]$
+        date:
+          type: string
+          format: date-time
+          description: Fecha de timbrado con formato ISO 8601. No debe ser 72 horas hacia atras y no mayor al momento.
+          example: 2025-09-12T15:30:00Z
+        customer:
+          type: string
+          description: Nombre del comprador.
+          example: Juan Pérez
+          minLength: 1
+          maxLength: 250
+        seller:
+          type: string
+          description: Nombre del vendedor.
+          example: Carlos Gómez
+          minLength: 1
+          maxLength: 250
+        quantity:
+          type: integer
+          format: int32
+          description: Cantidad del producto comprado. Solo acepta valores enteros.
+          example: 4
+          minimum: 1
+        unitPrice:
+          type: number
+          format: float
+          description: Precio del producto por unidad.
+          example: 4.5
+          minimum: 0.01
+        total:
+          type: number
+          format: float
+          description: Precio total por la compra de los productos.
+          example: 18.00
+          minimum: 0.01
+        description:
+          type: string
+          description: Descripción del motivo del CFDI.
+          example: Se ha realizado la compra de múltiples productos
+          minLength: 3
+          maxLength: 1000
+        
+    PaginatedInvoicesResponse:
+      type: object
+      properties:
+        meta:
+          $ref: '#/components/schemas/Pagination'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Invoice'
+
+    BadRequestResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Descripción general del error.
+          example: Bad Request
+        statusCode:
+          type: integer
+          format: int32
+          description: Código HTTP de respuesta.
+          example: 400
+        messagge:
+          type: array
+          items:
+            type: object
+            example: RFC format is invalid
+            description: Lista de los errores encontrados.
+
+    ConflictResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Descripción general del error.
+          example: Conflict
+        statusCode:
+          type: integer
+          format: int32
+          description: Código HTTP de respuesta.
+          example: 409
+        messagge:
+          type: string
+          example: RFC format is invalid
+          description: An invoice with RFC SADM930105UU9 and date 2025-09-29T15:30:00.000Z already exists
+
+    NotFoundResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Descripción general del error.
+          example: Not Found
+        statusCode:
+          type: integer
+          format: int32
+          description: Código HTTP de respuesta.
+          example: 404
+      

@@ -58,10 +58,12 @@ export class InvoicesService {
 
     return {
       data,
-      total: this.invoices.length,
-      page,
-      limit,
-      totalPages: Math.ceil(this.invoices.length / limit),
+      meta: {
+        total: this.invoices.length,
+        page,
+        limit,
+        totalPages: Math.ceil(this.invoices.length / limit),
+      },
     };
   }
 
