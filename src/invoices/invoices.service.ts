@@ -1,5 +1,5 @@
 import {
-  BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -8,6 +8,7 @@ import { Invoice } from './interfaces/invoice.interface';
 import { v4 as uuid } from 'uuid';
 import { Status } from './enums/status.enum';
 import { PaginationDto } from './dtos/pagination.dto';
+import { StatusResponseDto } from './dtos/status-response.dto';
 
 @Injectable()
 export class InvoicesService {
@@ -38,15 +39,14 @@ export class InvoicesService {
     return invoiceToSave;
   }
 
-  getStatus(folio: string) {
+  getStatus(folio: string): StatusResponseDto {
     const invoice = this.invoices.find((invoice) => invoice.folio === folio);
     if (!invoice) throw new NotFoundException();
-
     return {
       status: invoice.status,
       date: invoice.date,
       folio: invoice.folio,
-    };
+    } as StatusResponseDto;
   }
 
   findAll(paginationDto: PaginationDto) {
@@ -70,6 +70,10 @@ export class InvoicesService {
     return this.invoices.filter((invoice) => invoice.folio !== folio);
   }
 
+  cancelV2(folio: string) {
+    return 'implementar' + folio;
+  }
+
   private validateInvoice(invoice: Invoice) {
     const exists = this.invoices.some(
       (inv) =>
@@ -78,16 +82,15 @@ export class InvoicesService {
     );
 
     if (exists) {
-      throw new BadRequestException(
+      throw new ConflictException(
         `An invoice with RFC ${invoice.rfc} and date ${invoice.date.toISOString()} already exists`,
       );
     }
   }
 
   private async stamp(invoice: Invoice) {
-    await new Promise((res) => setTimeout(res, 2000));
+    await new Promise((res) => setTimeout(res, 20000));
     invoice.status = Status.COMPLETED;
-    this.invoices.push(invoice);
     console.log(`Factura realizada, folio: ${invoice.folio}`);
   }
 }

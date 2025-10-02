@@ -1,9 +1,7 @@
 export enum Status {
-  CANCELED = 'CANCELED',
-  PENDING = 'PENDING',
-  IN_PROGRESS = 'IN_PROGRESS',
-  RETRYING = 'RETRYING',
-  COMPLETED = 'COMPLETED',
-  BLOCKED = 'BLOCKED',
-  SKIPPED = 'SKIPPED',
+  CANCELED = 'Canceled',
+  PENDING = 'Pending',
+  IN_PROGRESS = 'InProgress',
+  COMPLETED = 'Completed',
+  FAILED = 'Failed',
 }
